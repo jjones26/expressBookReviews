@@ -23,57 +23,88 @@ public_users.post("/register", (req, res) => {
   });
 
 // Get the book list available in the shop
-public_users.get('/',function (req, res) {
-    res.send(JSON.stringify(books, null, 4));
-});
-
-
+// Get the book list available in the shop using Async/Await
+public_users.get('/', async function (req, res) {
+    try {
+      // We create a promise to simulate an asynchronous fetch
+      const getBooks = new Promise((resolve, reject) => {
+        resolve(books);
+      });
   
-
- // Get book details based on author
-public_users.get('/author/:author', function (req, res) {
-    const author = req.params.author;
-    const all_isbns = Object.keys(books); // Get all ISBNs (keys)
-    let books_by_author = [];
-  
-    all_isbns.forEach((isbn) => {
-      if (books[isbn]["author"] === author) {
-        books_by_author.push({
-          "isbn": isbn,
-          "title": books[isbn]["title"],
-          "reviews": books[isbn]["reviews"]
-        });
-      }
-    });
-  
-    if (books_by_author.length > 0) {
-      res.send(JSON.stringify(books_by_author, null, 4));
-    } else {
-      res.status(404).json({ message: "No books found by this author" });
+      const bookList = await getBooks;
+      res.send(JSON.stringify(bookList, null, 4));
+    } catch (error) {
+      res.status(500).json({ message: "Error retrieving books" });
     }
   });
 
 
-// Get all books based on title
-public_users.get('/title/:title', function (req, res) {
-    const title = req.params.title;
-    const all_isbns = Object.keys(books);
-    let books_by_title = [];
   
-    all_isbns.forEach((isbn) => {
-      if (books[isbn]["title"] === title) {
-        books_by_title.push({
-          "isbn": isbn,
-          "author": books[isbn]["author"],
-          "reviews": books[isbn]["reviews"]
+
+// Get book details based on author using Promises/Async-Await
+public_users.get('/author/:author', async function (req, res) {
+    const author = req.params.author;
+    
+    try {
+      const getBooksByAuthor = new Promise((resolve, reject) => {
+        const all_isbns = Object.keys(books);
+        let filtered_books = [];
+  
+        all_isbns.forEach((isbn) => {
+          if (books[isbn]["author"] === author) {
+            filtered_books.push({
+              "isbn": isbn,
+              "title": books[isbn]["title"],
+              "reviews": books[isbn]["reviews"]
+            });
+          }
         });
-      }
-    });
   
-    if (books_by_title.length > 0) {
-      res.send(JSON.stringify(books_by_title, null, 4));
-    } else {
-      res.status(404).json({ message: "No books found with this title" });
+        if (filtered_books.length > 0) {
+          resolve(filtered_books);
+        } else {
+          reject({ status: 404, message: "No books found by this author" });
+        }
+      });
+  
+      const booksFound = await getBooksByAuthor;
+      res.status(200).send(JSON.stringify(booksFound, null, 4));
+    } catch (error) {
+      res.status(error.status || 500).json({ message: error.message || "Internal Server Error" });
+    }
+  });
+
+
+// Get all books based on title using Promises/Async-Await
+public_users.get('/title/:title', async function (req, res) {
+    const title = req.params.title;
+  
+    try {
+      const getBooksByTitle = new Promise((resolve, reject) => {
+        const all_isbns = Object.keys(books);
+        let filtered_books = [];
+  
+        all_isbns.forEach((isbn) => {
+          if (books[isbn]["title"] === title) {
+            filtered_books.push({
+              "isbn": isbn,
+              "author": books[isbn]["author"],
+              "reviews": books[isbn]["reviews"]
+            });
+          }
+        });
+  
+        if (filtered_books.length > 0) {
+          resolve(filtered_books);
+        } else {
+          reject({ status: 404, message: "No books found with this title" });
+        }
+      });
+  
+      const booksFound = await getBooksByTitle;
+      res.status(200).send(JSON.stringify(booksFound, null, 4));
+    } catch (error) {
+      res.status(error.status || 500).json({ message: error.message || "Internal Server Error" });
     }
   });
 
@@ -91,15 +122,24 @@ public_users.get('/review/:isbn', function (req, res) {
     }
   });
 
-// Get book details based on ISBN
-public_users.get('/isbn/:isbn', function (req, res) {
-    const isbn = req.params.isbn; // Retrieve ISBN from request parameters
-    const book = books[isbn]; // Look up the book in your books database
+// Get book details based on ISBN using Promises/Async-Await
+public_users.get('/isbn/:isbn', async function (req, res) {
+    const isbn = req.params.isbn;
+    
+    try {
+      const getBook = new Promise((resolve, reject) => {
+        const book = books[isbn];
+        if (book) {
+          resolve(book);
+        } else {
+          reject({ status: 404, message: "Book not found" });
+        }
+      });
   
-    if (book) {
-      res.send(JSON.stringify(book, null, 4));
-    } else {
-      res.status(404).json({ message: "Book not found" });
+      const bookDetails = await getBook;
+      res.status(200).send(JSON.stringify(bookDetails, null, 4));
+    } catch (error) {
+      res.status(error.status || 500).json({ message: error.message || "Internal Server Error" });
     }
   });
 
